@@ -5,6 +5,8 @@ services:
     image: postgres:10.0
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    networks:
+      - postgres
     environment:
       POSTGRES_USER: aleph
       POSTGRES_PASSWORD: aleph
@@ -17,12 +19,16 @@ services:
       - discovery.type=single-node
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - elasticsearch
 
   redis:
     image: redis:alpine
     command: ["redis-server", "--save", "3600", "10"]
     volumes:
       - redis-data:/data
+    networks:
+      - redis
 
   convert-document:
     image: ghcr.io/alephdata/convert-document:3.11.2
@@ -30,6 +36,8 @@ services:
     restart: on-failure
     user: app
     tmpfs: /tmp
+    networks:
+      - worker
 
   ingest-file:
     image: ghcr.io/alephdata/ingest-file:3.11.2
@@ -37,6 +45,8 @@ services:
       - /tmp:mode=777
     volumes:
       - archive-data:/data
+    networks:
+      - worker
     depends_on:
       - postgres
       - redis
@@ -58,6 +68,8 @@ services:
       - /tmp
     volumes:
       - archive-data:/data
+    networks:
+      - worker
     env_file:
       - aleph.env
 
@@ -76,6 +88,11 @@ services:
       - archive-data:/data
       - "./mappings:/aleph/mappings"
       - "~:/host"
+    networks:
+      - postgres
+      - elasticsearch
+      - redis
+      - worker
     env_file:
       - aleph.env
 
@@ -94,6 +111,11 @@ services:
       - /tmp
     volumes:
       - archive-data:/data
+    networks:
+      - postgres
+      - elasticsearch
+      - redis
+      - worker
     env_file:
       - aleph.env
 
@@ -101,6 +123,11 @@ services:
     image: alephdata/aleph-ui-production:${ALEPH_TAG:-3.9.10}
     depends_on:
       - api
+    networks:
+      - postgres
+      - elasticsearch
+      - redis
+      - worker
     ports:
       - "8080:8080"
 
