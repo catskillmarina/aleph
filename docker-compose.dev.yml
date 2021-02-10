@@ -8,6 +8,8 @@ services:
       - "127.0.0.1:15432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    networks:
+      - postgres
     environment:
       POSTGRES_USER: aleph
       POSTGRES_PASSWORD: aleph
@@ -23,12 +25,16 @@ services:
       - "127.0.0.1:19200:9200"
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - elasticsearch
 
   redis:
     image: redis:alpine
     command: ["redis-server", "--save", "3600", "10"]
     volumes:
       - redis-data:/data
+    networks:
+      - redis
 
   convert-document:
     image: ghcr.io/alephdata/convert-document:latest
@@ -36,6 +42,8 @@ services:
     restart: on-failure
     user: app
     tmpfs: /tmp
+    networks:
+      - worker
 
   ingest-file:
     image: ghcr.io/alephdata/ingest-file:latest
@@ -43,6 +51,8 @@ services:
     tmpfs: /tmp
     volumes:
       - archive-data:/data
+    networks:
+      - worker
     depends_on:
       - postgres
       - redis
@@ -86,6 +96,11 @@ services:
       - "./contrib:/aleph/contrib"
       - "./mappings:/aleph/mappings"
       - "~:/host"
+    networks:
+      - postgres
+      - elasticsearch
+      - redis
+      - worker
     cap_add:
       - SYS_PTRACE
     environment:
@@ -112,6 +127,11 @@ services:
       - archive-data:/data
       - "./aleph:/aleph/aleph"
       - "./site:/aleph/site"
+    networks:
+      - postgres
+      - elasticsearch
+      - redis
+      - worker
     environment:
       ALEPH_DEBUG: "true"
       ALEPH_PROFILE: "false"
@@ -131,6 +151,11 @@ services:
     volumes:
       - "./ui/src:/alephui/src"
       - "./ui/package.json:/alephui/package.json"
+    networks:
+      - postgres
+      - elasticsearch
+      - redis
+      - worker
     environment:
       PORT: "8080"
       CI: "true"
